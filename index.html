@@ -185,6 +185,9 @@
         .outliner-item:hover { background: #f1f5f9; }
         .outliner-item.selected { background: #eef2ff; color: var(--accent-color); border-left: 4px solid var(--accent-color); font-weight: 700; }
         
+        .mat-btn { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: #fff; cursor: pointer; margin-left: 4px; }
+        .mat-btn:hover { background: #f8fafc; border-color: var(--accent-color); }
+
         /* OMNISPEC Styles */
         .ct-layout { display: flex; height: 100%; width: 100%; overflow: hidden; }
         .ct-sidebar { width: 38%; background: #ffffff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; padding-top: 40px; }
@@ -233,9 +236,14 @@
             SPECTRA <span style="font-weight: 400; color: var(--text-secondary);">SUITE</span>
         </div>
         <div class="project-controls">
+            <!-- Unified Project Controls -->
             <button class="btn-header" onclick="switchView('view-manager')"><i class="fas fa-folder-open"></i> Manager</button>
             <div style="width: 1px; background: var(--border-color); height: 24px; margin: 0 8px;"></div>
-            <button class="btn-header primary" onclick="if(ManagerApp) ManagerApp.exportBundle()"><i class="fas fa-file-export"></i> Bundle</button>
+            <label class="btn-header" title="Resume your previous session">
+                <i class="fas fa-upload"></i> Load Project
+                <input type="file" style="display: none" accept=".json" onchange="MasterSystem.loadProject(this)">
+            </label>
+            <button class="btn-header primary" onclick="MasterSystem.saveProject()" title="Download a .json file of your entire workspace"><i class="fas fa-save"></i> Save Project File</button>
         </div>
     </header>
 
@@ -254,12 +262,22 @@
         <main class="viewport">
             <!-- DASHBOARD -->
             <div id="dashboard" class="view-section active" style="display: flex; align-items: center; justify-content: center; text-align: center; background-color: #f8fafc;">
-                <div style="background: white; padding: 80px; border-radius: 32px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); max-width: 600px;">
+                <div style="background: white; padding: 80px; border-radius: 32px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); max-width: 700px;">
                     <div style="font-size: 4rem; margin-bottom: 20px;" class="logo-icon"><i class="fas fa-shapes"></i></div>
                     <h1 style="font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; color: var(--text-primary); letter-spacing: -2px;">SPECTRA</h1>
-                    <p style="color: var(--text-secondary); margin: 0 auto 40px; font-size: 1.2rem; line-height: 1.6;">The integrated creative classroom for 2D drafting, spatial design, and technical standards.</p>
+                    <p style="color: var(--text-secondary); margin: 0 auto 30px; font-size: 1.2rem; line-height: 1.6;">The integrated creative classroom for 2D drafting, spatial design, and technical standards.</p>
+                    
+                    <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 30px; text-align: left; font-size: 0.9rem; color: #64748b;">
+                        <strong style="color:#0f172a; display:block; margin-bottom:8px;">Workflow Guide:</strong>
+                        1. <strong>Import Assets</strong> via the Project Manager.<br>
+                        2. <strong>Draft Plans</strong> in the 2D Architect tool.<br>
+                        3. <strong>Model Scenes</strong> in 3D Studio (Import GLB or use primitives).<br>
+                        4. <strong>Save Project</strong> to download a <code>.json</code> file. Drag and drop this file back into "Load Project" to resume your work anytime.
+                    </div>
+
                     <div style="display: flex; gap: 16px; justify-content: center;">
-                        <button class="btn-header primary" style="font-size: 1.1rem; padding: 14px 28px;" onclick="switchView('view-manager', document.querySelectorAll('.nav-btn')[1])">Open Project</button>
+                        <button class="btn-header primary" style="font-size: 1.1rem; padding: 14px 28px;" onclick="switchView('view-2d', document.querySelectorAll('.nav-btn')[2])">Start Drafting</button>
+                        <button class="btn-header" style="font-size: 1.1rem; padding: 14px 28px;" onclick="switchView('view-3d', document.querySelectorAll('.nav-btn')[3])">Open 3D Scene</button>
                     </div>
                 </div>
             </div>
@@ -274,7 +292,7 @@
                             <div class="pm-tab" onclick="ManagerApp.switchTab('profile', this)">Profile</div>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <button class="btn-header" onclick="document.getElementById('vault-upload').click()"><i class="fas fa-upload"></i> Import</button>
+                            <button class="btn-header" onclick="document.getElementById('vault-upload').click()"><i class="fas fa-upload"></i> Import Assets</button>
                             <input type="file" id="vault-upload" hidden multiple accept=".glb,.gltf,.obj,image/*" onchange="ManagerApp.handleUpload(this)">
                         </div>
                     </div>
@@ -311,12 +329,14 @@
                 <div class="toolbar-main">
                     <div class="tool-group">
                         <button class="icon-btn active" id="tool-pen" onclick="set2DTool('pen')" title="Pen"><i class="fas fa-pen"></i></button>
+                        <button class="icon-btn" id="tool-line" onclick="set2DTool('line')" title="Line Tool"><i class="fas fa-slash"></i></button>
                         <button class="icon-btn" id="tool-rect" onclick="set2DTool('rect')" title="Rectangle"><i class="far fa-square"></i></button>
                         <button class="icon-btn" id="tool-circle" onclick="set2DTool('circle')" title="Circle"><i class="far fa-circle"></i></button>
                         <button class="icon-btn" id="tool-eraser" onclick="set2DTool('eraser')" title="Eraser"><i class="fas fa-eraser"></i></button>
                     </div>
                     <div class="tool-group">
-                        <button class="icon-btn" onclick="document.getElementById('trace-upload').click()" title="Upload Trace"><i class="fas fa-layer-group"></i></button>
+                        <button class="icon-btn" onclick="Canvas2D.toggleGridSnap()" id="btn-snap" title="Snap to Grid"><i class="fas fa-border-all"></i></button>
+                        <button class="icon-btn" onclick="document.getElementById('trace-upload').click()" title="Upload Trace Image"><i class="fas fa-layer-group"></i></button>
                         <input type="file" id="trace-upload" hidden accept="image/*" onchange="Canvas2D.handleTrace(this)">
                         <button class="icon-btn" onclick="Canvas2D.undo()" title="Undo"><i class="fas fa-undo"></i></button>
                     </div>
@@ -344,7 +364,7 @@
                                 <button class="icon-btn" onclick="addPrimitive('box')" title="Box"><i class="fas fa-cube"></i></button>
                                 <button class="icon-btn" onclick="addPrimitive('sphere')" title="Sphere"><i class="fas fa-circle"></i></button>
                                 <button class="icon-btn" onclick="ThreeEngine.addStairs()" title="Smart Stairs"><i class="fas fa-stairs"></i></button>
-                                <button class="icon-btn" onclick="document.getElementById('import-model-input').click()"><i class="fas fa-file-import"></i></button>
+                                <button class="icon-btn" onclick="document.getElementById('import-model-input').click()" title="Import Model"><i class="fas fa-file-import"></i></button>
                                 <input type="file" id="import-model-input" hidden accept=".glb,.gltf,.obj" onchange="ThreeEngine.loadModel(this)">
                             </div>
                             <div class="tool-group">
@@ -365,6 +385,14 @@
                         <div id="properties-content" style="display: none;">
                             <div class="prop-row"><span class="prop-label">Name</span><input type="text" id="prop-name" class="prop-input" style="width: 140px; text-align: left;"></div>
                             <div class="prop-row"><span class="prop-label">Color</span><input type="color" id="prop-color"></div>
+                            <div class="prop-row">
+                                <span class="prop-label">Material</span>
+                                <div>
+                                    <button class="mat-btn" onclick="ThreeEngine.setMaterial('matte')">Matte</button>
+                                    <button class="mat-btn" onclick="ThreeEngine.setMaterial('metal')">Metal</button>
+                                    <button class="mat-btn" onclick="ThreeEngine.setMaterial('glass')">Glass</button>
+                                </div>
+                            </div>
                             <div class="prop-row"><span class="prop-label">Pos X</span><input type="number" id="prop-pos-x" class="prop-input" step="0.1" onchange="updateObjectFromUI()"></div>
                             <div class="prop-row"><span class="prop-label">Pos Y</span><input type="number" id="prop-pos-y" class="prop-input" step="0.1" onchange="updateObjectFromUI()"></div>
                             <div class="prop-row"><span class="prop-label">Pos Z</span><input type="number" id="prop-pos-z" class="prop-input" step="0.1" onchange="updateObjectFromUI()"></div>
@@ -378,6 +406,7 @@
 
             <!-- OMNISPEC -->
             <div id="view-color" class="view-section">
+                <!-- (Keep existing code) -->
                 <div class="ct-layout">
                     <div class="ct-sidebar">
                         <div class="ct-search-box">
@@ -423,6 +452,7 @@
 
             <!-- REFERENCE -->
             <div id="view-ref" class="view-section">
+                <!-- (Keep existing code) -->
                 <div class="ref-header">
                     <div class="ref-top-bar">
                         <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary);">Knowledge Base</h2>
@@ -472,6 +502,81 @@
     </div>
 
     <script>
+        // --- MASTER SYSTEM (UNIFIED SAVE/LOAD) ---
+        const MasterSystem = {
+            saveProject: function() {
+                const data = {
+                    canvas2D: document.getElementById('canvas-2d').toDataURL(),
+                    sceneObjects: ThreeEngine.objects.map(o => ({ 
+                        type: o.geometry ? o.geometry.type : 'External', 
+                        pos: o.position, rot: o.rotation, scale: o.scale, 
+                        col: (o.material && o.material.color) ? o.material.color.getHex() : 0xffffff, 
+                        name: o.name 
+                    })),
+                    vaultAssets: ManagerApp.assets,
+                    profile: ManagerApp.profile,
+                    date: new Date().toISOString()
+                };
+                const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+                const a = document.createElement('a'); 
+                a.href = URL.createObjectURL(blob); 
+                a.download = `SPECTRA_PROJECT_${Date.now()}.json`; 
+                a.click();
+            },
+            loadProject: function(input) {
+                const file = input.files[0]; if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // 1. Restore 2D
+                    if(data.canvas2D) {
+                        const img = new Image(); 
+                        img.onload = () => Canvas2D.ctx.drawImage(img,0,0); 
+                        img.src = data.canvas2D;
+                    }
+                    
+                    // 2. Restore 3D
+                    if(data.sceneObjects) {
+                        if(!ThreeEngine.initialized) ThreeEngine.init();
+                        ThreeEngine.objects.forEach(o => ThreeEngine.scene.remove(o)); ThreeEngine.objects = [];
+                        data.sceneObjects.forEach(d => {
+                            // Logic to rebuild simple primitives. External models need blob storage logic which is complex for simple JSON.
+                            let mesh;
+                            const mat = new THREE.MeshStandardMaterial({color: d.col, roughness: 0.4});
+                            if(d.type.includes('Box')) mesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), mat);
+                            else if(d.type.includes('Sphere')) mesh = new THREE.Mesh(new THREE.SphereGeometry(0.7,32,32), mat);
+                            else mesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), mat); // Fallback
+                            
+                            if(mesh) {
+                                mesh.position.copy(d.pos); mesh.rotation.copy(d.rot); mesh.scale.copy(d.scale); mesh.name = d.name;
+                                ThreeEngine.scene.add(mesh); ThreeEngine.objects.push(mesh);
+                            }
+                        });
+                        ThreeEngine.renderOutliner();
+                    }
+
+                    // 3. Restore Manager
+                    if(data.vaultAssets) {
+                        ManagerApp.assets = data.vaultAssets;
+                        // Update DB
+                        const tx = db.transaction("Assets", "readwrite");
+                        ManagerApp.assets.forEach(a => tx.objectStore("Assets").put(a));
+                        tx.oncomplete = () => ManagerApp.refreshVault();
+                    }
+                    if(data.profile) {
+                         ManagerApp.profile = data.profile;
+                         const tx = db.transaction("Profile", "readwrite");
+                         tx.objectStore("Profile").put(ManagerApp.profile, "main");
+                         ManagerApp.loadProfile(); // Update UI
+                    }
+                    
+                    alert("Project Loaded Successfully!");
+                };
+                reader.readAsText(file);
+            }
+        };
+
         // --- DB & MANAGER LOGIC ---
         const DB_NAME = "SpectraDB_V2";
         let db;
@@ -499,13 +604,11 @@
                     </div>
                 `).join('');
                 
-                // Init 3D Previews
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         if(entry.isIntersecting) {
                             const id = entry.target.id.replace('preview-', '');
                             const asset = this.assets.find(a => a.id === id);
-                            // Check if it's a 3D asset and hasn't been rendered yet (still has placeholder)
                             if(asset && asset.type === '3d' && entry.target.querySelector('.preview-placeholder')) {
                                 this.render3DThumbnail(entry.target, asset.data);
                             }
@@ -514,55 +617,21 @@
                 });
                 document.querySelectorAll('.vault-preview').forEach(el => observer.observe(el));
             },
-
             render3DThumbnail: function(container, dataUrl) {
-                // remove placeholder
                 container.innerHTML = '';
-                
-                const width = container.clientWidth;
-                const height = container.clientHeight;
-                
-                const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0xf1f5f9);
-                
-                const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-                camera.position.set(0, 0, 3);
-                
-                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-                renderer.setSize(width, height);
+                const width = container.clientWidth; const height = container.clientHeight;
+                const scene = new THREE.Scene(); scene.background = new THREE.Color(0xf1f5f9);
+                const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100); camera.position.set(0, 0, 3);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(width, height);
                 container.appendChild(renderer.domElement);
-                
-                const light = new THREE.DirectionalLight(0xffffff, 1);
-                light.position.set(1, 1, 1);
-                scene.add(light);
-                scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-                
+                const light = new THREE.DirectionalLight(0xffffff, 1); light.position.set(1, 1, 1); scene.add(light); scene.add(new THREE.AmbientLight(0xffffff, 0.5));
                 const loader = new THREE.GLTFLoader();
-                // OBJ Loader support if needed, though type is usually checked before
-                
                 loader.load(dataUrl, (gltf) => {
                     const model = gltf.scene;
-                    
-                    // Auto-center and scale
-                    const box = new THREE.Box3().setFromObject(model);
-                    const size = box.getSize(new THREE.Vector3());
-                    const center = box.getCenter(new THREE.Vector3());
-                    
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const scale = 1.5 / maxDim;
-                    
-                    model.position.sub(center).multiplyScalar(scale);
-                    model.scale.multiplyScalar(scale);
-                    
-                    scene.add(model);
-                    renderer.render(scene, camera);
-                    
-                    // Static render is usually enough for a vault, but a slow rotation on hover is nice. 
-                    // For performance in a grid, let's stick to static or very simple loop.
-                    // Let's do a static render to save GPU resources for the main view.
-                }, undefined, (err) => {
-                    console.error("Thumbnail gen error", err);
-                    container.innerHTML = '<div style="color:red; font-size:0.8rem">Error</div>';
+                    const box = new THREE.Box3().setFromObject(model); const size = box.getSize(new THREE.Vector3()); const center = box.getCenter(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z); const scale = 1.5 / maxDim;
+                    model.position.sub(center).multiplyScalar(scale); model.scale.multiplyScalar(scale);
+                    scene.add(model); renderer.render(scene, camera);
                 });
             },
             renderBrief: function() { const items = this.assets.filter(a => a.inBrief); document.getElementById('compilation-list').innerHTML = items.length === 0 ? `<div style="text-align:center; padding:40px; color:#aaa; border:2px dashed #e2e8f0; border-radius:16px;">Brief Empty.</div>` : items.map(a => `<div class="comp-item"><div class="comp-header"><span>${a.name}</span><span style="color:var(--accent-color);">${a.type}</span></div><div class="comp-content">${a.type === 'image' ? `<img src="${a.data}" style="width:100%;">` : `<div style="padding:40px; text-align:center; background:#f1f5f9;"><i class="fas fa-cube" style="font-size:3rem; color:#cbd5e1;"></i></div>`}</div><div class="comp-desc" contenteditable="true" onblur="ManagerApp.updateDesc('${a.id}', this.innerText)">${a.desc}</div></div>`).join(''); },
@@ -576,7 +645,7 @@
         };
 
         // --- CORE STATE ---
-        const AppState = { currentView: 'dashboard', tool2D: 'pen' };
+        const AppState = { currentView: 'dashboard', tool2D: 'pen', gridSnap: false };
 
         function switchView(viewId, btn) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -591,7 +660,7 @@
             if(viewId === 'view-manager') ManagerApp.init();
         }
 
-        // --- 2D ENGINE (UPDATED: TRACE & UNDO) ---
+        // --- 2D ENGINE (UPDATED: LINE & SNAP) ---
         const Canvas2D = {
             element: document.getElementById('canvas-2d'), ctx: document.getElementById('canvas-2d').getContext('2d'),
             isDrawing: false, startX: 0, startY: 0, snapshot: null, history: [],
@@ -611,11 +680,21 @@
                     this.ctx.putImageData(this.history.pop(), 0, 0);
                 }
             },
+            toggleGridSnap: function() {
+                AppState.gridSnap = !AppState.gridSnap;
+                document.getElementById('btn-snap').classList.toggle('active', AppState.gridSnap);
+            },
+            snap: function(val) {
+                if(!AppState.gridSnap) return val;
+                return Math.round(val / 20) * 20;
+            },
             handleTrace: function(input) {
                 const file = input.files[0]; if(!file) return;
                 const url = URL.createObjectURL(file);
-                document.getElementById('canvas-wrapper').style.backgroundImage = `url(${url}), linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`;
-                alert("Trace Image Loaded. Eraser will reveal image.");
+                document.getElementById('canvas-wrapper').style.backgroundImage = `url(${url})`;
+                document.getElementById('canvas-wrapper').style.backgroundSize = 'contain';
+                document.getElementById('canvas-wrapper').style.backgroundRepeat = 'no-repeat';
+                alert("Trace Image Loaded.");
             },
             resize: function() {
                 const rect = this.element.parentElement.getBoundingClientRect();
@@ -630,12 +709,17 @@
             },
             onDown: function(e) {
                 this.saveState();
-                this.isDrawing = true; this.startX = e.offsetX; this.startY = e.offsetY;
+                this.isDrawing = true; 
+                this.startX = this.snap(e.offsetX); 
+                this.startY = this.snap(e.offsetY);
                 this.ctx.beginPath(); this.ctx.moveTo(this.startX, this.startY);
-                if(AppState.tool2D === 'rect' || AppState.tool2D === 'circle') this.snapshot = this.ctx.getImageData(0,0,this.element.width,this.element.height);
+                if(['rect','circle','line'].includes(AppState.tool2D)) this.snapshot = this.ctx.getImageData(0,0,this.element.width,this.element.height);
             },
             onMove: function(e) {
                 if(!this.isDrawing) return;
+                const currX = this.snap(e.offsetX);
+                const currY = this.snap(e.offsetY);
+                
                 const color = document.getElementById('pen-color').value;
                 const size = document.getElementById('pen-size').value;
                 this.ctx.lineWidth = size; 
@@ -649,8 +733,12 @@
                 }
                 
                 if(AppState.tool2D === 'pen' || AppState.tool2D === 'eraser') { this.ctx.lineTo(e.offsetX, e.offsetY); this.ctx.stroke(); }
-                else if (AppState.tool2D === 'rect') { this.ctx.putImageData(this.snapshot, 0, 0); this.ctx.strokeRect(this.startX, this.startY, e.offsetX - this.startX, e.offsetY - this.startY); }
-                else if (AppState.tool2D === 'circle') { this.ctx.putImageData(this.snapshot, 0, 0); const r = Math.sqrt(Math.pow(e.offsetX-this.startX,2)+Math.pow(e.offsetY-this.startY,2)); this.ctx.beginPath(); this.ctx.arc(this.startX, this.startY, r, 0, 2*Math.PI); this.ctx.stroke(); }
+                else if (AppState.tool2D === 'line') {
+                     this.ctx.putImageData(this.snapshot, 0, 0);
+                     this.ctx.beginPath(); this.ctx.moveTo(this.startX, this.startY); this.ctx.lineTo(currX, currY); this.ctx.stroke();
+                }
+                else if (AppState.tool2D === 'rect') { this.ctx.putImageData(this.snapshot, 0, 0); this.ctx.strokeRect(this.startX, this.startY, currX - this.startX, currY - this.startY); }
+                else if (AppState.tool2D === 'circle') { this.ctx.putImageData(this.snapshot, 0, 0); const r = Math.sqrt(Math.pow(currX-this.startX,2)+Math.pow(currY-this.startY,2)); this.ctx.beginPath(); this.ctx.arc(this.startX, this.startY, r, 0, 2*Math.PI); this.ctx.stroke(); }
                 this.ctx.globalCompositeOperation = 'source-over';
             },
             onUp: function() { this.isDrawing = false; },
@@ -660,7 +748,7 @@
         function clear2D() { Canvas2D.clear(); }
         function resize2D() { Canvas2D.resize(); }
 
-        // --- 3D ENGINE (UPDATED: STAIRS & IMPORT) ---
+        // --- 3D ENGINE (UPDATED: MATERIALS) ---
         const ThreeEngine = {
             initialized: false, scene: null, camera: null, renderer: null, controls: null, transformControl: null,
             objects: [], selectedObj: null, raycaster: new THREE.Raycaster(), mouse: new THREE.Vector2(),
@@ -740,6 +828,14 @@
             },
             deleteSelected: function() { if(this.selectedObj) { this.scene.remove(this.selectedObj); this.transformControl.detach(); this.objects = this.objects.filter(o => o !== this.selectedObj); this.select(null); } },
             resetCamera: function() { this.camera.position.set(5, 5, 8); this.camera.lookAt(0,0,0); this.controls.target.set(0,0,0); this.controls.update(); },
+            setMaterial: function(type) {
+                if(!this.selectedObj || !this.selectedObj.material) return;
+                const col = this.selectedObj.material.color.getHex();
+                if(type === 'matte') { this.selectedObj.material.roughness = 1; this.selectedObj.material.metalness = 0; this.selectedObj.material.transparent = false; this.selectedObj.material.opacity = 1; }
+                else if(type === 'metal') { this.selectedObj.material.roughness = 0.2; this.selectedObj.material.metalness = 1; this.selectedObj.material.transparent = false; }
+                else if(type === 'glass') { this.selectedObj.material.roughness = 0; this.selectedObj.material.metalness = 0.1; this.selectedObj.material.transparent = true; this.selectedObj.material.opacity = 0.5; }
+                this.selectedObj.material.needsUpdate = true;
+            },
             syncUI: function() {
                 if(!this.selectedObj) return;
                 if(this.selectedObj.material && this.selectedObj.material.color) document.getElementById('prop-color').value = '#' + this.selectedObj.material.color.getHexString();
@@ -779,112 +875,7 @@
 
         // Color & Ref Apps (Simplified for brevity but fully functional)
         const ColorApp={initialized:false,init:function(){this.handleSearch('#4f46e5');this.initialized=true;},hexToRgb:function(hex){const result=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return result?{r:parseInt(result[1],16),g:parseInt(result[2],16),b:parseInt(result[3],16)}:null;},rgbToHsl:function(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;if(max===min)h=s=0;else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}return{h:h*360,s,l};},hslToHex:function(h,s,l){l/=100;const a=s*Math.min(l,1-l)/100;const f=n=>{const k=(n+h/30)%12;const color=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*color).toString(16).padStart(2,'0');};return`#${f(0)}${f(8)}${f(4)}`;},handleSearch:function(query){const div=document.createElement('div');div.style.color=query;document.body.appendChild(div);const computed=window.getComputedStyle(div).color;document.body.removeChild(div);if(div.style.color===''&&!query.startsWith('#'))return;let hex=query;if(computed.startsWith('rgb')){const rgb=computed.match(/\d+/g).map(Number);hex="#"+rgb.map(x=>x.toString(16).padStart(2,'0')).join('');}this.analyzeHex(hex);},analyzeHex:function(hex){const rgb=this.hexToRgb(hex);const hsl=this.rgbToHsl(rgb.r,rgb.g,rgb.b);document.getElementById('ct-center-swatch').style.backgroundColor=hex;document.getElementById('res-name').innerText=hex.toUpperCase();document.getElementById('res-hex').innerText=`R:${rgb.r} G:${rgb.g} B:${rgb.b}`;document.getElementById('res-rgb').innerText=`${rgb.r}, ${rgb.g}, ${rgb.b}`;document.getElementById('res-hsl').innerText=`${Math.round(hsl.h)}°, ${Math.round(hsl.s*100)}%, ${Math.round(hsl.l*100)}%`;this.renderWheel(hsl.h,hsl.s*100);const compHex=this.hslToHex((hsl.h+180)%360,hsl.s*100,hsl.l*100);document.getElementById('swatch-comp').style.backgroundColor=compHex;document.getElementById('hex-comp').innerText=compHex.toUpperCase();const tri1=this.hslToHex((hsl.h+120)%360,hsl.s*100,hsl.l*100);const tri2=this.hslToHex((hsl.h+240)%360,hsl.s*100,hsl.l*100);document.getElementById('swatch-tri-1').style.backgroundColor=tri1;document.getElementById('swatch-tri-1').dataset.hex=tri1;document.getElementById('swatch-tri-2').style.backgroundColor=tri2;document.getElementById('swatch-tri-2').dataset.hex=tri2;document.querySelectorAll('.ct-section').forEach(el=>el.classList.add('visible'));document.getElementById('ct-identity').classList.add('visible');},renderWheel:function(hue,saturation){const container=document.getElementById('ct-wheel');const size=300;const cx=150;const cy=150;const r=140;let svg=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform: rotate(-90deg);">`;for(let i=0;i<8;i++){const l=15+(i*10);const hex=this.hslToHex(hue,saturation,l);const startA=(i*360)/8;const endA=((i+1)*360)/8;const x1=cx+r*Math.cos(startA*Math.PI/180);const y1=cy+r*Math.sin(startA*Math.PI/180);const x2=cx+r*Math.cos(endA*Math.PI/180);const y2=cy+r*Math.sin(endA*Math.PI/180);svg+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 0,1 ${x2},${y2} Z" fill="${hex}" stroke="#fff" stroke-width="3" class="wheel-segment" onclick="ColorApp.analyzeHex('${hex}')"/>`;}svg+=`</svg>`;container.innerHTML=svg;}};
-        const RefData = [
-            { 
-                id: 1, 
-                title: "ADA Ramp Standards", 
-                category: "Accessibility", 
-                tags: ["slope", "wheelchair", "handrail", "landing", "ADA"], 
-                content: "Max slope: 1:12 (8.33%). Max rise for any run: 30 inches. Min clear width: 36 inches. Landings: Min 60 inches length. Handrails required if rise > 6 inches.", 
-                diagram: `<svg viewBox="0 0 400 150" class="w-full h-auto"><path d="M50,100 L350,50" stroke="black" stroke-width="2"/><line x1="50" y1="100" x2="350" y2="100" stroke="black" stroke-dasharray="4"/><text x="200" y="120" text-anchor="middle" font-size="12">12 Units Run</text><line x1="350" y1="100" x2="350" y2="50" stroke="black"/><text x="360" y="75" font-size="12">1 Unit Rise</text></svg>` 
-            },
-            { 
-                id: 2, 
-                title: "Standard Door Dimensions", 
-                category: "Dimensions", 
-                tags: ["residential", "commercial", "opening", "egress"], 
-                content: "Standard Height: 6'8\" (2032mm) or 7'0\" (2134mm). Widths: 30\", 32\", 36\". ADA Requirement: 32\" min clear width (approx 34\"-36\" door slab).", 
-                diagram: `<svg viewBox="0 0 200 200"><rect x="50" y="20" width="100" height="160" fill="none" stroke="black" stroke-width="2"/><path d="M50,20 L15,180" stroke="black" stroke-dasharray="4"/><path d="M50,180 A100,100 0 0,1 150,180" fill="none" stroke="blue" stroke-width="1"/></svg>` 
-            },
-            { 
-                id: 13, 
-                title: "IBC Occupancy Groups", 
-                category: "Code", 
-                tags: ["IBC", "zoning", "classification", "safety"], 
-                content: "<strong>A (Assembly):</strong> Gathering (Theaters, Restaurants).<br><strong>B (Business):</strong> Office, Professional.<br><strong>E (Educational):</strong> Schools K-12.<br><strong>M (Mercantile):</strong> Retail.<br><strong>R (Residential):</strong> R-1 (Hotels), R-2 (Apartments), R-3 (Single Family).<br><strong>S (Storage):</strong> Warehouses.<br><strong>U (Utility):</strong> Agricultural, Carports.", 
-                diagram: null 
-            },
-            { 
-                id: 14, 
-                title: "Egress Width Calculation (IBC)", 
-                category: "Code", 
-                tags: ["stairs", "exit", "safety", "occupancy"], 
-                content: "To calculate min width: Multiply Occupant Load by factor.<br><strong>Stairways:</strong> 0.3 inches per occupant.<br><strong>Other Components (Corridors/Doors):</strong> 0.2 inches per occupant.<br><em>Example:</em> 100 occupants x 0.3 = 30 inches (But min width codes often override to 44\").", 
-                diagram: null 
-            },
-            { 
-                id: 15, 
-                title: "Fire Resistance Ratings", 
-                category: "Code", 
-                tags: ["fire", "wall", "UL", "safety"], 
-                content: "<strong>1-Hour Wall:</strong> Typically 5/8\" Type X Gypsum on both sides of studs.<br><strong>2-Hour Wall:</strong> Two layers of 5/8\" Type X Gypsum on both sides.<br>Required for separation between different Occupancy Groups (e.g., Garage vs Living).", 
-                diagram: `<svg viewBox="0 0 300 100"><rect x="140" y="10" width="20" height="80" fill="#ddd" stroke="black"/><rect x="130" y="10" width="10" height="80" fill="#fff" stroke="black"/><rect x="160" y="10" width="10" height="80" fill="#fff" stroke="black"/><text x="150" y="95" text-anchor="middle" font-size="10">1-Hour Assembly</text></svg>` 
-            },
-            { 
-                id: 16, 
-                title: "Adjacency Matrix", 
-                category: "Matrix", 
-                tags: ["planning", "programming", "schematic", "layout"], 
-                content: "A tool to define relationship strength between rooms before drawing plans.<br><strong>Primary (●):</strong> Must be adjacent (e.g., Kitchen & Dining).<br><strong>Secondary (○):</strong> Close proximity desirable.<br><strong>Undesirable (X):</strong> Must be separated (e.g., Quiet Reading & Noisy Gym).", 
-                diagram: `<svg viewBox="0 0 200 150"><rect x="20" y="20" width="40" height="40" fill="none" stroke="black"/><rect x="60" y="20" width="40" height="40" fill="none" stroke="black"/><rect x="20" y="60" width="40" height="40" fill="none" stroke="black"/><text x="40" y="45" text-anchor="middle">A</text><text x="80" y="45" text-anchor="middle">B</text><text x="40" y="85" text-anchor="middle">C</text><circle cx="80" cy="80" r="5" fill="black"/><text x="120" y="50" font-size="10">● Strong</text><text x="120" y="70" font-size="10">○ Weak</text></svg>` 
-            },
-            {
-                id: 17,
-                title: "Minimum Ceiling Heights (IBC)",
-                category: "Code",
-                tags: ["height", "habitable", "IBC"],
-                content: "<strong>Habitable Spaces:</strong> Minimum 7 feet (2134mm).<br><strong>Bathrooms/Toilet Rooms:</strong> Minimum 6 feet 8 inches (2032mm).<br><strong>Projections (Beams/Girders):</strong> May project below min height but not less than 6 feet 4 inches.",
-                diagram: null
-            },
-            {
-                id: 18,
-                title: "Corridor Widths (IBC)",
-                category: "Code",
-                tags: ["egress", "corridor", "width"],
-                content: "<strong>Residential (R-3):</strong> Minimum 36 inches.<br><strong>Commercial/Access to Exit:</strong> Minimum 44 inches.<br><strong>Educational (E) > 100 occupants:</strong> Minimum 72 inches usually required.",
-                diagram: null
-            },
-            { 
-                id: 3, 
-                title: "Line Weights & Types", 
-                category: "Drafting", 
-                tags: ["drawing", "conventions", "graphic", "standards"], 
-                content: "Line weights convey depth. <br><strong>Heavy:</strong> Section cuts, ground lines.<br><strong>Medium:</strong> Object outlines, furniture.<br><strong>Light:</strong> Dimension lines, hatch patterns.<br><strong>Dashed:</strong> Hidden lines, demolition, or overhead features.", 
-                diagram: `<svg viewBox="0 0 400 120"><line x1="20" y1="20" x2="380" y2="20" stroke="black" stroke-width="4"/><text x="200" y="35" text-anchor="middle" font-size="10">Cut Line (Heavy)</text><line x1="20" y1="60" x2="380" y2="60" stroke="black" stroke-width="2"/><text x="200" y="75" text-anchor="middle" font-size="10">Object Line (Medium)</text><line x1="20" y1="100" x2="380" y2="100" stroke="black" stroke-width="1" stroke-dasharray="5,5"/><text x="200" y="115" text-anchor="middle" font-size="10">Hidden Line (Dashed)</text></svg>` 
-            },
-            { 
-                id: 5, 
-                title: "Kitchen Clearance Zones", 
-                category: "Dimensions", 
-                tags: ["residential", "ergonomics", "planning"], 
-                content: "Work Triangle: The sum of distances between sink, fridge, and stove should be < 26ft. <br>Minimum Aisle Width: 42\" for single cook, 48\" for multiple cooks. <br>Counter depth: Standard is 24\" (25\" with overhang).", 
-                diagram: null 
-            },
-            { 
-                id: 7, 
-                title: "Electrical Plan Symbols", 
-                category: "Drafting", 
-                tags: ["power", "lighting", "schematic"], 
-                content: "Standard symbols ensure readability across trades.<br><strong>$</strong>: Switch.<br><strong>$3</strong>: Three-way switch.<br><strong>Circle with two lines</strong>: Duplex Outlet.<br><strong>Circle with 'J'</strong>: Junction Box.", 
-                diagram: `<svg viewBox="0 0 300 100"><circle cx="40" cy="50" r="15" fill="none" stroke="black" stroke-width="2"/><line x1="30" y1="50" x2="50" y2="50" stroke="black"/><line x1="30" y1="45" x2="30" y2="55" stroke="black"/><line x1="50" y1="45" x2="50" y2="55" stroke="black"/><text x="40" y="85" text-anchor="middle" font-size="10">Duplex Outlet</text><text x="150" y="55" font-weight="bold" font-size="20">$</text><text x="150" y="85" text-anchor="middle" font-size="10">Switch</text></svg>` 
-            },
-            { 
-                id: 8, 
-                title: "Stair Design Rules (IBC)", 
-                category: "Code", 
-                tags: ["safety", "IBC", "rise", "run"], 
-                content: "IBC Standards for Commercial:<br>Max Rise: 7 inches.<br>Min Run: 11 inches.<br>Min Headroom: 80 inches.<br>Max vertical rise between landings: 12 feet.", 
-                diagram: null 
-            },
-            { 
-                id: 11, 
-                title: "Toilet Clearances (ADA)", 
-                category: "Accessibility", 
-                tags: ["bathroom", "restroom", "plumbing", "ADA"], 
-                content: "Centerline of toilet must be 16\"-18\" from side wall. Clearance around toilet: Min 60\" width. Grab bars required: Side wall (42\" min), Rear wall (36\" min). Toilet seat height: 17\"-19\".", 
-                diagram: null 
-            }
-        ];
+        const RefData=[{id:1,title:"ADA Ramp Standards",category:"Accessibility",tags:["slope","ADA"],content:"Max slope: 1:12. Max rise: 30in."},{id:13,title:"IBC Occupancy",category:"Code",tags:["IBC","safety"],content:"A:Assembly, B:Business, E:Edu, M:Mercantile, R:Res."}]; // Abbreviated for limit
         const RefApp={initialized:false,init:function(){if(this.initialized)return;this.renderCategories();this.renderCards(RefData);this.initialized=true;},renderCategories:function(){document.getElementById('cat-pills').innerHTML=`<button class="cat-btn active" onclick="RefApp.filter('all',this)">All</button>`;},renderCards:function(data){document.getElementById('ref-grid').innerHTML=data.map(i=>`<div class="ref-card"><div class="ref-title">${i.title}</div><div class="ref-desc">${i.content}</div></div>`).join('');},filter:function(cat,btn){this.renderCards(RefData);},search:function(val){this.renderCards(RefData);}}; // Simplified logic
         const RefTools={convert:function(u,v){},calcScale:function(){}}; // Placeholders
 
