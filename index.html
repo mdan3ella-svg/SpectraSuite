@@ -50,6 +50,14 @@
             flex-direction: column;
         }
 
+        /* --- Branding Classes --- */
+        .text-gradient {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
         /* --- Header --- */
         header {
             height: var(--header-height);
@@ -166,7 +174,7 @@
             background-image: 
                 linear-gradient(to right, #e2e8f0 1px, transparent 1px),
                 linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
-            background-size: 40px 40px; 
+            background-size: 20px 20px; 
             background-color: #ffffff;
             background-position: center;
             background-repeat: repeat;
@@ -665,11 +673,22 @@
             element: document.getElementById('canvas-2d'), ctx: document.getElementById('canvas-2d').getContext('2d'),
             isDrawing: false, startX: 0, startY: 0, snapshot: null, history: [],
             init: function() {
+                // Resize Observer to handle display:none issues automatically
+                const resizeObserver = new ResizeObserver(() => this.resize());
+                resizeObserver.observe(this.element.parentElement);
+                
                 this.resize();
                 this.element.addEventListener('pointerdown', this.onDown.bind(this));
                 this.element.addEventListener('pointermove', this.onMove.bind(this));
                 this.element.addEventListener('pointerup', this.onUp.bind(this));
-                window.addEventListener('resize', this.resize.bind(this));
+                // Remove window resize listener as Observer handles it better
+            },
+            getCoords: function(e) {
+                const rect = this.element.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
             },
             saveState: function() {
                 if (this.history.length > 10) this.history.shift();
@@ -686,7 +705,8 @@
             },
             snap: function(val) {
                 if(!AppState.gridSnap) return val;
-                return Math.round(val / 20) * 20;
+                const gridSize = 20;
+                return Math.round(val / gridSize) * gridSize;
             },
             handleTrace: function(input) {
                 const file = input.files[0]; if(!file) return;
@@ -697,32 +717,54 @@
                 alert("Trace Image Loaded.");
             },
             resize: function() {
-                const rect = this.element.parentElement.getBoundingClientRect();
-                if(rect.width === 0) return; 
+                const parent = this.element.parentElement;
+                const rect = parent.getBoundingClientRect();
+                
+                if(rect.width === 0 || rect.height === 0) return; 
+                
+                // Match canvas internal resolution to display resolution
                 if(this.element.width !== rect.width || this.element.height !== rect.height) {
-                    const temp = document.createElement('canvas'); temp.width = this.element.width; temp.height = this.element.height;
-                    const tCtx = temp.getContext('2d'); if(this.element.width > 0) tCtx.drawImage(this.element, 0, 0);
-                    this.element.width = rect.width; this.element.height = rect.height;
+                    // Save content
+                    const temp = document.createElement('canvas'); 
+                    temp.width = this.element.width; 
+                    temp.height = this.element.height;
+                    const tCtx = temp.getContext('2d'); 
+                    if(this.element.width > 0) tCtx.drawImage(this.element, 0, 0);
+                    
+                    this.element.width = rect.width; 
+                    this.element.height = rect.height;
+                    
+                    // Restore content
                     if(temp.width > 0) this.ctx.drawImage(temp, 0, 0);
-                    this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round';
+                    
+                    // Re-apply styles
+                    this.ctx.lineCap = 'round'; 
+                    this.ctx.lineJoin = 'round';
                 }
             },
             onDown: function(e) {
                 this.saveState();
                 this.isDrawing = true; 
-                this.startX = this.snap(e.offsetX); 
-                this.startY = this.snap(e.offsetY);
-                this.ctx.beginPath(); this.ctx.moveTo(this.startX, this.startY);
+                const coords = this.getCoords(e);
+                this.startX = this.snap(coords.x); 
+                this.startY = this.snap(coords.y);
+                
+                this.ctx.beginPath(); 
+                this.ctx.moveTo(this.startX, this.startY);
+                
                 if(['rect','circle','line'].includes(AppState.tool2D)) this.snapshot = this.ctx.getImageData(0,0,this.element.width,this.element.height);
             },
             onMove: function(e) {
                 if(!this.isDrawing) return;
-                const currX = this.snap(e.offsetX);
-                const currY = this.snap(e.offsetY);
+                const coords = this.getCoords(e);
+                const currX = this.snap(coords.x);
+                const currY = this.snap(coords.y);
                 
                 const color = document.getElementById('pen-color').value;
                 const size = document.getElementById('pen-size').value;
                 this.ctx.lineWidth = size; 
+                
+                // Composite handling (Eraser)
                 if (AppState.tool2D === 'eraser') {
                     this.ctx.globalCompositeOperation = 'destination-out';
                     this.ctx.strokeStyle = 'rgba(0,0,0,1)';
@@ -732,13 +774,18 @@
                     this.ctx.fillStyle = color;
                 }
                 
-                if(AppState.tool2D === 'pen' || AppState.tool2D === 'eraser') { this.ctx.lineTo(e.offsetX, e.offsetY); this.ctx.stroke(); }
+                if(AppState.tool2D === 'pen' || AppState.tool2D === 'eraser') { 
+                    this.ctx.lineTo(currX, currY); 
+                    this.ctx.stroke(); 
+                }
                 else if (AppState.tool2D === 'line') {
                      this.ctx.putImageData(this.snapshot, 0, 0);
                      this.ctx.beginPath(); this.ctx.moveTo(this.startX, this.startY); this.ctx.lineTo(currX, currY); this.ctx.stroke();
                 }
                 else if (AppState.tool2D === 'rect') { this.ctx.putImageData(this.snapshot, 0, 0); this.ctx.strokeRect(this.startX, this.startY, currX - this.startX, currY - this.startY); }
                 else if (AppState.tool2D === 'circle') { this.ctx.putImageData(this.snapshot, 0, 0); const r = Math.sqrt(Math.pow(currX-this.startX,2)+Math.pow(currY-this.startY,2)); this.ctx.beginPath(); this.ctx.arc(this.startX, this.startY, r, 0, 2*Math.PI); this.ctx.stroke(); }
+                
+                // Reset composite
                 this.ctx.globalCompositeOperation = 'source-over';
             },
             onUp: function() { this.isDrawing = false; },
