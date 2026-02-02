@@ -779,7 +779,112 @@
 
         // Color & Ref Apps (Simplified for brevity but fully functional)
         const ColorApp={initialized:false,init:function(){this.handleSearch('#4f46e5');this.initialized=true;},hexToRgb:function(hex){const result=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return result?{r:parseInt(result[1],16),g:parseInt(result[2],16),b:parseInt(result[3],16)}:null;},rgbToHsl:function(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;if(max===min)h=s=0;else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}return{h:h*360,s,l};},hslToHex:function(h,s,l){l/=100;const a=s*Math.min(l,1-l)/100;const f=n=>{const k=(n+h/30)%12;const color=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*color).toString(16).padStart(2,'0');};return`#${f(0)}${f(8)}${f(4)}`;},handleSearch:function(query){const div=document.createElement('div');div.style.color=query;document.body.appendChild(div);const computed=window.getComputedStyle(div).color;document.body.removeChild(div);if(div.style.color===''&&!query.startsWith('#'))return;let hex=query;if(computed.startsWith('rgb')){const rgb=computed.match(/\d+/g).map(Number);hex="#"+rgb.map(x=>x.toString(16).padStart(2,'0')).join('');}this.analyzeHex(hex);},analyzeHex:function(hex){const rgb=this.hexToRgb(hex);const hsl=this.rgbToHsl(rgb.r,rgb.g,rgb.b);document.getElementById('ct-center-swatch').style.backgroundColor=hex;document.getElementById('res-name').innerText=hex.toUpperCase();document.getElementById('res-hex').innerText=`R:${rgb.r} G:${rgb.g} B:${rgb.b}`;document.getElementById('res-rgb').innerText=`${rgb.r}, ${rgb.g}, ${rgb.b}`;document.getElementById('res-hsl').innerText=`${Math.round(hsl.h)}°, ${Math.round(hsl.s*100)}%, ${Math.round(hsl.l*100)}%`;this.renderWheel(hsl.h,hsl.s*100);const compHex=this.hslToHex((hsl.h+180)%360,hsl.s*100,hsl.l*100);document.getElementById('swatch-comp').style.backgroundColor=compHex;document.getElementById('hex-comp').innerText=compHex.toUpperCase();const tri1=this.hslToHex((hsl.h+120)%360,hsl.s*100,hsl.l*100);const tri2=this.hslToHex((hsl.h+240)%360,hsl.s*100,hsl.l*100);document.getElementById('swatch-tri-1').style.backgroundColor=tri1;document.getElementById('swatch-tri-1').dataset.hex=tri1;document.getElementById('swatch-tri-2').style.backgroundColor=tri2;document.getElementById('swatch-tri-2').dataset.hex=tri2;document.querySelectorAll('.ct-section').forEach(el=>el.classList.add('visible'));document.getElementById('ct-identity').classList.add('visible');},renderWheel:function(hue,saturation){const container=document.getElementById('ct-wheel');const size=300;const cx=150;const cy=150;const r=140;let svg=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform: rotate(-90deg);">`;for(let i=0;i<8;i++){const l=15+(i*10);const hex=this.hslToHex(hue,saturation,l);const startA=(i*360)/8;const endA=((i+1)*360)/8;const x1=cx+r*Math.cos(startA*Math.PI/180);const y1=cy+r*Math.sin(startA*Math.PI/180);const x2=cx+r*Math.cos(endA*Math.PI/180);const y2=cy+r*Math.sin(endA*Math.PI/180);svg+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 0,1 ${x2},${y2} Z" fill="${hex}" stroke="#fff" stroke-width="3" class="wheel-segment" onclick="ColorApp.analyzeHex('${hex}')"/>`;}svg+=`</svg>`;container.innerHTML=svg;}};
-        const RefData=[{id:1,title:"ADA Ramp Standards",category:"Accessibility",tags:["slope","ADA"],content:"Max slope: 1:12. Max rise: 30in."},{id:13,title:"IBC Occupancy",category:"Code",tags:["IBC","safety"],content:"A:Assembly, B:Business, E:Edu, M:Mercantile, R:Res."}]; // Abbreviated for limit
+        const RefData = [
+            { 
+                id: 1, 
+                title: "ADA Ramp Standards", 
+                category: "Accessibility", 
+                tags: ["slope", "wheelchair", "handrail", "landing", "ADA"], 
+                content: "Max slope: 1:12 (8.33%). Max rise for any run: 30 inches. Min clear width: 36 inches. Landings: Min 60 inches length. Handrails required if rise > 6 inches.", 
+                diagram: `<svg viewBox="0 0 400 150" class="w-full h-auto"><path d="M50,100 L350,50" stroke="black" stroke-width="2"/><line x1="50" y1="100" x2="350" y2="100" stroke="black" stroke-dasharray="4"/><text x="200" y="120" text-anchor="middle" font-size="12">12 Units Run</text><line x1="350" y1="100" x2="350" y2="50" stroke="black"/><text x="360" y="75" font-size="12">1 Unit Rise</text></svg>` 
+            },
+            { 
+                id: 2, 
+                title: "Standard Door Dimensions", 
+                category: "Dimensions", 
+                tags: ["residential", "commercial", "opening", "egress"], 
+                content: "Standard Height: 6'8\" (2032mm) or 7'0\" (2134mm). Widths: 30\", 32\", 36\". ADA Requirement: 32\" min clear width (approx 34\"-36\" door slab).", 
+                diagram: `<svg viewBox="0 0 200 200"><rect x="50" y="20" width="100" height="160" fill="none" stroke="black" stroke-width="2"/><path d="M50,20 L15,180" stroke="black" stroke-dasharray="4"/><path d="M50,180 A100,100 0 0,1 150,180" fill="none" stroke="blue" stroke-width="1"/></svg>` 
+            },
+            { 
+                id: 13, 
+                title: "IBC Occupancy Groups", 
+                category: "Code", 
+                tags: ["IBC", "zoning", "classification", "safety"], 
+                content: "<strong>A (Assembly):</strong> Gathering (Theaters, Restaurants).<br><strong>B (Business):</strong> Office, Professional.<br><strong>E (Educational):</strong> Schools K-12.<br><strong>M (Mercantile):</strong> Retail.<br><strong>R (Residential):</strong> R-1 (Hotels), R-2 (Apartments), R-3 (Single Family).<br><strong>S (Storage):</strong> Warehouses.<br><strong>U (Utility):</strong> Agricultural, Carports.", 
+                diagram: null 
+            },
+            { 
+                id: 14, 
+                title: "Egress Width Calculation (IBC)", 
+                category: "Code", 
+                tags: ["stairs", "exit", "safety", "occupancy"], 
+                content: "To calculate min width: Multiply Occupant Load by factor.<br><strong>Stairways:</strong> 0.3 inches per occupant.<br><strong>Other Components (Corridors/Doors):</strong> 0.2 inches per occupant.<br><em>Example:</em> 100 occupants x 0.3 = 30 inches (But min width codes often override to 44\").", 
+                diagram: null 
+            },
+            { 
+                id: 15, 
+                title: "Fire Resistance Ratings", 
+                category: "Code", 
+                tags: ["fire", "wall", "UL", "safety"], 
+                content: "<strong>1-Hour Wall:</strong> Typically 5/8\" Type X Gypsum on both sides of studs.<br><strong>2-Hour Wall:</strong> Two layers of 5/8\" Type X Gypsum on both sides.<br>Required for separation between different Occupancy Groups (e.g., Garage vs Living).", 
+                diagram: `<svg viewBox="0 0 300 100"><rect x="140" y="10" width="20" height="80" fill="#ddd" stroke="black"/><rect x="130" y="10" width="10" height="80" fill="#fff" stroke="black"/><rect x="160" y="10" width="10" height="80" fill="#fff" stroke="black"/><text x="150" y="95" text-anchor="middle" font-size="10">1-Hour Assembly</text></svg>` 
+            },
+            { 
+                id: 16, 
+                title: "Adjacency Matrix", 
+                category: "Matrix", 
+                tags: ["planning", "programming", "schematic", "layout"], 
+                content: "A tool to define relationship strength between rooms before drawing plans.<br><strong>Primary (●):</strong> Must be adjacent (e.g., Kitchen & Dining).<br><strong>Secondary (○):</strong> Close proximity desirable.<br><strong>Undesirable (X):</strong> Must be separated (e.g., Quiet Reading & Noisy Gym).", 
+                diagram: `<svg viewBox="0 0 200 150"><rect x="20" y="20" width="40" height="40" fill="none" stroke="black"/><rect x="60" y="20" width="40" height="40" fill="none" stroke="black"/><rect x="20" y="60" width="40" height="40" fill="none" stroke="black"/><text x="40" y="45" text-anchor="middle">A</text><text x="80" y="45" text-anchor="middle">B</text><text x="40" y="85" text-anchor="middle">C</text><circle cx="80" cy="80" r="5" fill="black"/><text x="120" y="50" font-size="10">● Strong</text><text x="120" y="70" font-size="10">○ Weak</text></svg>` 
+            },
+            {
+                id: 17,
+                title: "Minimum Ceiling Heights (IBC)",
+                category: "Code",
+                tags: ["height", "habitable", "IBC"],
+                content: "<strong>Habitable Spaces:</strong> Minimum 7 feet (2134mm).<br><strong>Bathrooms/Toilet Rooms:</strong> Minimum 6 feet 8 inches (2032mm).<br><strong>Projections (Beams/Girders):</strong> May project below min height but not less than 6 feet 4 inches.",
+                diagram: null
+            },
+            {
+                id: 18,
+                title: "Corridor Widths (IBC)",
+                category: "Code",
+                tags: ["egress", "corridor", "width"],
+                content: "<strong>Residential (R-3):</strong> Minimum 36 inches.<br><strong>Commercial/Access to Exit:</strong> Minimum 44 inches.<br><strong>Educational (E) > 100 occupants:</strong> Minimum 72 inches usually required.",
+                diagram: null
+            },
+            { 
+                id: 3, 
+                title: "Line Weights & Types", 
+                category: "Drafting", 
+                tags: ["drawing", "conventions", "graphic", "standards"], 
+                content: "Line weights convey depth. <br><strong>Heavy:</strong> Section cuts, ground lines.<br><strong>Medium:</strong> Object outlines, furniture.<br><strong>Light:</strong> Dimension lines, hatch patterns.<br><strong>Dashed:</strong> Hidden lines, demolition, or overhead features.", 
+                diagram: `<svg viewBox="0 0 400 120"><line x1="20" y1="20" x2="380" y2="20" stroke="black" stroke-width="4"/><text x="200" y="35" text-anchor="middle" font-size="10">Cut Line (Heavy)</text><line x1="20" y1="60" x2="380" y2="60" stroke="black" stroke-width="2"/><text x="200" y="75" text-anchor="middle" font-size="10">Object Line (Medium)</text><line x1="20" y1="100" x2="380" y2="100" stroke="black" stroke-width="1" stroke-dasharray="5,5"/><text x="200" y="115" text-anchor="middle" font-size="10">Hidden Line (Dashed)</text></svg>` 
+            },
+            { 
+                id: 5, 
+                title: "Kitchen Clearance Zones", 
+                category: "Dimensions", 
+                tags: ["residential", "ergonomics", "planning"], 
+                content: "Work Triangle: The sum of distances between sink, fridge, and stove should be < 26ft. <br>Minimum Aisle Width: 42\" for single cook, 48\" for multiple cooks. <br>Counter depth: Standard is 24\" (25\" with overhang).", 
+                diagram: null 
+            },
+            { 
+                id: 7, 
+                title: "Electrical Plan Symbols", 
+                category: "Drafting", 
+                tags: ["power", "lighting", "schematic"], 
+                content: "Standard symbols ensure readability across trades.<br><strong>$</strong>: Switch.<br><strong>$3</strong>: Three-way switch.<br><strong>Circle with two lines</strong>: Duplex Outlet.<br><strong>Circle with 'J'</strong>: Junction Box.", 
+                diagram: `<svg viewBox="0 0 300 100"><circle cx="40" cy="50" r="15" fill="none" stroke="black" stroke-width="2"/><line x1="30" y1="50" x2="50" y2="50" stroke="black"/><line x1="30" y1="45" x2="30" y2="55" stroke="black"/><line x1="50" y1="45" x2="50" y2="55" stroke="black"/><text x="40" y="85" text-anchor="middle" font-size="10">Duplex Outlet</text><text x="150" y="55" font-weight="bold" font-size="20">$</text><text x="150" y="85" text-anchor="middle" font-size="10">Switch</text></svg>` 
+            },
+            { 
+                id: 8, 
+                title: "Stair Design Rules (IBC)", 
+                category: "Code", 
+                tags: ["safety", "IBC", "rise", "run"], 
+                content: "IBC Standards for Commercial:<br>Max Rise: 7 inches.<br>Min Run: 11 inches.<br>Min Headroom: 80 inches.<br>Max vertical rise between landings: 12 feet.", 
+                diagram: null 
+            },
+            { 
+                id: 11, 
+                title: "Toilet Clearances (ADA)", 
+                category: "Accessibility", 
+                tags: ["bathroom", "restroom", "plumbing", "ADA"], 
+                content: "Centerline of toilet must be 16\"-18\" from side wall. Clearance around toilet: Min 60\" width. Grab bars required: Side wall (42\" min), Rear wall (36\" min). Toilet seat height: 17\"-19\".", 
+                diagram: null 
+            }
+        ];
         const RefApp={initialized:false,init:function(){if(this.initialized)return;this.renderCategories();this.renderCards(RefData);this.initialized=true;},renderCategories:function(){document.getElementById('cat-pills').innerHTML=`<button class="cat-btn active" onclick="RefApp.filter('all',this)">All</button>`;},renderCards:function(data){document.getElementById('ref-grid').innerHTML=data.map(i=>`<div class="ref-card"><div class="ref-title">${i.title}</div><div class="ref-desc">${i.content}</div></div>`).join('');},filter:function(cat,btn){this.renderCards(RefData);},search:function(val){this.renderCards(RefData);}}; // Simplified logic
         const RefTools={convert:function(u,v){},calcScale:function(){}}; // Placeholders
 
